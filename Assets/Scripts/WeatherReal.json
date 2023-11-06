@@ -1,0 +1,15 @@
+[
+  {
+    "province": "江苏",
+    "city": "南京市",
+    "adcode": "320100",
+    "weather": "晴",
+    "temperature": "19",
+    "winddirection": "东南",
+    "windpower": "≤3",
+    "humidity": "69",
+    "reporttime": "2023-11-02 21:06:20",
+    "temperature_float": "19.0",
+    "humidity_float": "69.0"
+  }
+]
