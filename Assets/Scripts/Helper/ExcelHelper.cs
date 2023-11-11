@@ -10,6 +10,7 @@ using static ExcelHelper;
 public static class ExcelHelper
 {
     static string fileName = "CityCode.xlsx";
+    //static string filePath = Application.dataPath + "/ExcelData/" + fileName;
     static string filePath = Application.dataPath + "/Resources/ExcelData/" + fileName;
 
     //cityCodes = GetCityCodeList(filePath);
@@ -19,12 +20,14 @@ public static class ExcelHelper
     public static void GetCityCodeList(string path)
     {
         cityCodes = MiniExcel.Query<CityCode>(path).ToList(); //按照 表格类名称类从文件中读取数据，并转换成列表
+        WeaterCtr.Instance.inputField.text = cityCodes.Count().ToString();
     }
 
     public static int GetCityCode(string cityName)
     {
         citycode = cityCodes.Find(x => x.Name.Contains(cityName)).adcode;
         cityCodes = null;
+        Debug.Log(citycode);
         return citycode;
     }
 

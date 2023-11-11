@@ -6,6 +6,7 @@ using System.Collections;
 using System.Threading;
 using System;
 using Unity.VisualScripting;
+using static Unity.Burst.Intrinsics.X86.Avx;
 
 public class DictationEngine : MonoBehaviour
 {
@@ -19,6 +20,7 @@ public class DictationEngine : MonoBehaviour
     /// </summary>
     [SerializeField]
     TextMeshProUGUI BTText;
+    public TMP_InputField tMP;
 
     /// <summary>
     /// Dictation Recognizer class
@@ -63,13 +65,34 @@ public class DictationEngine : MonoBehaviour
     /// </summary>
     string[] keywords = new string[] { "小泰小泰", "小泰", "停" };
 
+    /// <summary>
+    /// the time wait for get answer from chatgpt and badou
+    /// </summary>
+    private float waitTime = 15;
+
+    /// <summary>
+    /// wait for get answer signal
+    /// </summary>
+    public static bool GetAnswerSuccess = false;
+
     private void Awake()
     {
-        if(Instance == null) Instance = this;
+        if (Instance == null) Instance = this;
         m_DictationRecognizer = new DictationRecognizer();
         m_PhraseRecognizer = new KeywordRecognizer(keywords);
     }
 
+    private void Update()
+    {
+        if (GetAnswerSuccess)
+        {
+            Debug.Log("End Record");
+            GetAnswerSuccess = false;
+            //ContentManage.Instance.AddLIneText("", "", false);
+            StopCoroutine("JudgeGetAnswerSuccess");
+        }
+
+    }
     #region PhrasePart
 
     /// <summary>
@@ -113,7 +136,7 @@ public class DictationEngine : MonoBehaviour
             SpeakPrintFunc.isSpecialWord = true;
             SpeakPrintFunc.DisplayText = false;
         }
-      
+
     }
 
     /// <summary>
@@ -154,12 +177,34 @@ public class DictationEngine : MonoBehaviour
                 PhraseRecognitionSystem.Shutdown();
                 m_PhraseRecognizer.Stop();
             }
-            if(m_DictationRecognizer.Status == SpeechSystemStatus.Stopped)
+            if (m_DictationRecognizer.Status == SpeechSystemStatus.Stopped)
             {
                 m_DictationRecognizer.Start();
             }
         }
 
+    }
+
+    public IEnumerator JudgeGetAnswerSuccess()
+    {
+        Debug.Log("StartRecord");
+        yield return new WaitForSeconds(waitTime);
+        if (!GetAnswerSuccess)
+        {
+            AwakeStart();
+            AnwserSelection.tokensource.Cancel();
+            SpeakPrintFunc.isSpecialWord = false;
+            SpeakPrintFunc.Instance.StopCoroutine("Think_Animation");
+            ContentManage.Instance.AddLIneText("", "", false);
+            SpeakPrintFunc.isThinking = false;
+            SpeakPrintFunc.sayHello = false;
+            GetAnswerSuccess = false;
+        }
+        //else
+        //{
+        //    GetAnswerSuccess = false;
+        //    StopCoroutine("JudgeGetAnswerSuccess");
+        //}
     }
 
     /// <summary>
@@ -173,7 +218,9 @@ public class DictationEngine : MonoBehaviour
         ReadyToStartPhrase();
 
         question = text;
+        StartCoroutine("JudgeGetAnswerSuccess");
         SpeakPrintFunc.Instance.Replay_AnswerSpeak();
+
     }
 
     /// <summary>
@@ -390,6 +437,13 @@ public class DictationEngine : MonoBehaviour
         }
     }
     /* --------------- 按钮切换语言输出状态，按下可以直接关闭其他功能  ------------------------- */
+
+    public void Test()
+    {
+        StartCoroutine("JudgeGetAnswerSuccess");
+        question = tMP.text;
+        SpeakPrintFunc.Instance.Replay_AnswerSpeak();
+    }
 
     /// <summary>
     /// 应用退出

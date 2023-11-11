@@ -19,9 +19,11 @@ public class WeaterCtr : MonoBehaviour
     public static WeaterCtr Instance;
 
     static string fileName = "CityCode.xlsx";
-    static string filePath = Application.dataPath + "/Resources/ExcelData/" + fileName;
+    static string filePath = Application.streamingAssetsPath + "/" + fileName;
+    //static string filePath = Application.dataPath + "/Resources/ExcelData/" + fileName;
 
     string cityCode;
+    public TMP_InputField inputField;
     public LineChart LWT = new LineChart();
     public TMP_InputField cityName;
 
@@ -42,9 +44,22 @@ public class WeaterCtr : MonoBehaviour
 
     public void GetWeatherData()
     {
-        InitData();
-        ExcelHelper.GetCityCodeList(filePath);
-        cityCode = ExcelHelper.GetCityCode(cityName.text).ToString();
+        try
+        {
+            InitData();
+            ExcelHelper.GetCityCodeList(filePath);
+        }
+        catch (Exception ex)
+        {
+            inputField.text = "in catch" + ex.Message;
+        }
+
+        //inputField.text = Application.dataPath;
+        //inputField.text += filePath;
+        //cityCode = ExcelHelper.GetCityCode(cityName.text).ToString();
+        cityCode = ExcelHelper.GetCityCode("南京").ToString();
+        inputField.text += cityCode.ToString();
+        Debug.Log(cityCode);
         StartCoroutine(GetData());
     }
 

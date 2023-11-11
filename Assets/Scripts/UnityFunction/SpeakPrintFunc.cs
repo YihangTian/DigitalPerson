@@ -29,10 +29,6 @@ public class SpeakPrintFunc : MonoBehaviour
 
     private string[] ellips = new string[] { "", ".", "..", "..." };
 
-
-    //speakList = new List<string> { "河海大学是中国最早开","设水利类专业的高校，以","水利、工农业产业技术","和管理科学为优势和特","色，各类学科协调发展","。" };
-    //speakList = new List<string> { "河海大学是中国最早开设水利类专业的高校，", "以水利、工农业产业技术", "和管理科学为优势和特色，", "各类学科协调发展。"};
-
     private void Awake()
     {
         if(Instance == null)
@@ -81,6 +77,7 @@ public class SpeakPrintFunc : MonoBehaviour
     public void OnPrintText(string text)
     {
         answertext = text;
+        Debug.Log(text);
     }
 
     /// <summary>

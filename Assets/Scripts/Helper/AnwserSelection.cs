@@ -8,7 +8,7 @@ using UnityEngine;
 /// <summary>
 /// 
 /// </summary>
-public class AnwserSelection
+public static class AnwserSelection
 {
     /// <summary>
     /// Text print thread
@@ -25,6 +25,10 @@ public class AnwserSelection
     /// </summary>
     static Task baduoTask;
 
+    static Task AnswerTask;
+
+    public static CancellationTokenSource tokensource = new CancellationTokenSource();
+    static CancellationToken cancellationToken = tokensource.Token;
     /// <summary>
     /// text print event
     /// </summary>
@@ -84,9 +88,10 @@ public class AnwserSelection
                 break;
             case QuestionTypeEnum.Think:
                 await baduoTask;
-
-                Task task = Task.Run(async () =>
+                
+                AnswerTask = Task.Run(async () =>
                 {
+
                     if (baduoAnwser_List.Contains("很抱歉，我暂时无法回答您的问题！") || baduoAnwser_List.Contains("小泰：您是否想咨询以下问题，您可点击相关问题，也可重新咨询"))
                     {
                         chatGPTTask.Start();
@@ -98,8 +103,8 @@ public class AnwserSelection
                         BadouPrinter();
                         print_Thread.Join();
                     }
-                });
-                await task;
+                }, cancellationToken);
+                await AnswerTask;
                 //main thread speak
                 Speak(robatAnswer);
                 Debug.Log("mainTask complish");
@@ -195,7 +200,7 @@ public class AnwserSelection
             SpeakPrintFunc.canTalking = true;
             SpeakPrintFunc.DisplayText = true;
             SpeakPrintFunc.speakList = bufferList;
-
+            DictationEngine.GetAnswerSuccess = true;
             int badou_Count = robatAnswer.Count();
             for (int i = 0; i < badou_Count; i++)
             {

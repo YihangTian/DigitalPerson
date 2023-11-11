@@ -14,7 +14,7 @@ public static class ChartHelper
     static Color AxisLineColor;
     static Color TooltipLineColor;
 
-    static List<string> Date;
+    static List<string> Date = new List<string>();
 
     static Serie SWT;
     /// <summary>
@@ -81,7 +81,6 @@ public static class ChartHelper
         xAxis.axisLabel.textStyle.autoWrap = true;
         xAxis.axisLabel.rotate = 0;
         xAxis.boundaryGap = false;
-        if (date.Count > 5) xAxis.splitNumber = 5;
         //else if (date.Count == 9) xAxis.axisLabel.interval = 1;
         //else xAxis.splitNumber = 0;
 

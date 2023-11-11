@@ -9,13 +9,19 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using UnityEditor.Experimental.GraphView;
 
 public static class ChatGPTHelper
 {
     /// <summary>
     /// zhizenzen API url
     /// </summary>
+    //static string chatGPTPostUrl = "https://flag.smarttrot.com/v1/chat";
     static string chatGPTPostUrl = "https://flag.smarttrot.com/v1/chat/completions";
+
+    private static string BCpostUrl = "https://yewu.bcwhkj.cn/api/v2.Gptliu/search";
+    //private static string appkey = "64609539cab34e31bdc0c684788dc8c4";
+    //private static string Token = "e3SSe9pqVASSNxHcxBmdOYcv6KjRQnNl";
 
     /// <summary>
     /// API Key
@@ -32,7 +38,7 @@ public static class ChatGPTHelper
     const string json_Content = "content";
 
     const string gpt4 = "gpt-4";
-    const string gpt3 = "gpt-3.5-turbo-0613";
+    const string gpt3 = "gpt-3.5-turbo-1106";
 
     delegate void TextPrintEvent(string printText);
     static event TextPrintEvent textPrintEventHandler;
@@ -61,7 +67,7 @@ public static class ChatGPTHelper
     /// receive from API stream
     /// </summary>
     static string responseText = null;
-
+    static JsonData jsonData = null;
     /// <summary>
     /// main thread use this function for get ChatGPT answer
     /// </summary>
@@ -92,7 +98,7 @@ public static class ChatGPTHelper
 
         JsonData messageData = new JsonData();
         messageData[json_Role] = "user";
-        question = question + "字数在三十个字以内。";
+        question = question + "，字数在三十个字以内。";
         messageData[json_Content] = question;
 
         messageDatas.Add(messageData);
@@ -146,59 +152,73 @@ public static class ChatGPTHelper
     /// <param name="postUrl"></param>
     static async void PostUrl(JsonData data, string postUrl)
     {
-        byte[] requestData = Encoding.Default.GetBytes(data.ToJson());
-
-        HttpWebRequest request = null;
-        request = WebRequest.Create(postUrl) as HttpWebRequest;
-        request.Proxy = null;
-        request.Method = "POST";
-        request.ContentType = "application/json";
-        request.Headers.Add("Authorization", "Bearer " + apiSecretKey);
-        Stream requestSteam = request.GetRequestStream();
-
-        requestSteam.Write(requestData, 0, requestData.Length);
-        requestSteam.Close();
-
-        HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-        Stream responseStream = response.GetResponseStream();
-        StreamReader responseStreamReader = new StreamReader(responseStream, Encoding.UTF8);
-
-        SpeakPrintFunc.isChatGPT = true;
-        SpeakPrintFunc.canTalking = true;
-
-        //handle response text
-        while (responseStreamReader.Read() != -1)
+        try
         {
-            responseText = responseStreamReader.ReadLine();
-            if (responseText != null)
+            byte[] requestData = Encoding.Default.GetBytes(data.ToJson());
+
+            HttpWebRequest request = null;
+            request = WebRequest.Create(postUrl) as HttpWebRequest;
+            request.Proxy = null;
+            request.Method = "POST";
+            request.ContentType = "application/json";
+            request.Headers.Add("Authorization", "Bearer " + apiSecretKey);
+            Stream requestSteam = request.GetRequestStream();
+
+            requestSteam.Write(requestData, 0, requestData.Length);
+            requestSteam.Close();
+
+            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+            Stream responseStream = response.GetResponseStream();
+            StreamReader responseStreamReader = new StreamReader(responseStream, Encoding.UTF8);
+
+            SpeakPrintFunc.isChatGPT = true;
+            SpeakPrintFunc.canTalking = true;
+
+            //handle response text
+            while (responseStreamReader.Read() != -1)
             {
-                if (responseText.Contains("content"))
+                responseText = responseStreamReader.ReadLine();
+                if (responseText != null)
                 {
-                    responseText = responseText.Substring(5);
-                    JObject ans = JsonConvert.DeserializeObject(responseText) as JObject;
-                    string s = ans["choices"][0]["delta"]["content"].ToString();
-                    Anwsers += s;
-                    Speaks += s;
-                    if (Speaks.Contains("，") || Speaks.Contains("。") || Speaks.Contains("：") || Speaks.Contains("？"))
+                    if (responseText.Contains("content"))
                     {
-                        speakList.Add(Speaks);
-                        SpeakPrintFunc.speakList.Add(Speaks);
-                        SpeakPrintFunc.DisplayText = true;
-                        Speaks = null;
-                        if(speakList.Count == 1)
+                        responseText = responseText.Substring(5);
+                        JObject ans = JsonConvert.DeserializeObject(responseText) as JObject;
+                        string s = ans["choices"][0]["delta"]["content"].ToString();
+                        Anwsers += s;
+                        Speaks += s;
+                        if (Speaks.Contains("，") || Speaks.Contains("。") || Speaks.Contains("：") || Speaks.Contains("？"))
                         {
-                            sendTextTask.Start();
+                            speakList.Add(Speaks);
+                            SpeakPrintFunc.speakList.Add(Speaks);
+                            SpeakPrintFunc.DisplayText = true;
+                            Speaks = null;
+                            if (speakList.Count == 1)
+                            {
+                                DictationEngine.GetAnswerSuccess = true;
+                                sendTextTask.Start();
+                            }
                         }
                     }
                 }
             }
-        }
-        await sendTextTask;
-        Debug.Log("complish get answer");
-        responseStreamReader.Close();
-        responseStream.Close();
-        SpeakPrintFunc.DisplayText = false;
 
-        textPrintEventHandler -= SpeakPrintFunc.Instance.OnPrintText;
+            await sendTextTask;
+            Debug.Log("complish get answer");
+            responseStreamReader.Close();
+            responseStream.Close();
+            SpeakPrintFunc.DisplayText = false;
+            textPrintEventHandler -= SpeakPrintFunc.Instance.OnPrintText;
+        }
+        catch
+        {
+            Debug.Log("Catch + Start BCChatGPT");
+            string question = DictationEngine.question + "，字数在三十个字以内。";
+            jsonData = BCChatGPTHelper.GetPostInfo(question);
+            BCChatGPTHelper.Post(BCpostUrl, jsonData, answer =>
+            {
+                Anwsers = answer;
+            });
+        }
     }
 }
